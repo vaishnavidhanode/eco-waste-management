@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Request Pickup - Smart Waste</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+    <h1>♻️ Smart Waste</h1>
+    <p>Request Waste Pickup</p>
+</header>
+
+<main>
+
+    <h2>Pickup Request Form</h2>
+
+    <form id="requestForm">
+
+        <label>Name</label>
+        <input
+            type="text"
+            id="name"
+            placeholder="Enter your name"
+            required
+        >
+
+        <label>Phone Number</label>
+        <input
+            type="tel"
+            id="phone"
+            placeholder="Enter phone number"
+            required
+        >
+
+        <label>Waste Category</label>
+
+        <select id="waste_category" required>
+            <option value="">Select waste category</option>
+            <option value="Organic">🌱 Organic</option>
+            <option value="Recyclable">♻️ Recyclable</option>
+            <option value="E-Waste">🔋 E-Waste</option>
+            <option value="Hazardous">☣️ Hazardous</option>
+            <option value="General">🗑️ General</option>
+        </select>
+
+        <label>Pickup Address</label>
+
+        <textarea
+            id="pickup_address"
+            placeholder="Enter pickup address"
+            required
+        ></textarea>
+
+        <label>Pickup Date</label>
+
+        <input
+            type="date"
+            id="pickup_date"
+            required
+        >
+
+        <label>Pickup Time</label>
+
+        <select id="pickup_time">
+            <option value="Morning">Morning (8 AM - 12 PM)</option>
+            <option value="Afternoon">Afternoon (12 PM - 4 PM)</option>
+            <option value="Evening">Evening (4 PM - 7 PM)</option>
+        </select>
+
+        <label>Description</label>
+
+        <textarea
+            id="description"
+            placeholder="Describe the waste..."
+        ></textarea>
+
+        <button type="submit">
+            Submit Pickup Request
+        </button>
+
+    </form>
+
+    <div id="message"></div>
+
+</main>
+
+<script src="script.js"></script>
+
+</body>
+</html>

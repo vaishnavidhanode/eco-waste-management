@@ -1,0 +1,680 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard - Smart Waste</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>♻️ Smart Waste</h1>
+        <p>Admin Dashboard</p>
+    </header>
+
+
+    <main class="admin-container">
+
+        <!-- Dashboard Title -->
+        <div class="dashboard-header">
+            <div>
+                <h2>Collection Requests</h2>
+                <p>Manage and monitor waste pickup requests.</p>
+            </div>
+
+            <a href="/">
+                <button class="home-btn">🏠 Home</button>
+            </a>
+        </div>
+
+
+        <!-- Statistics -->
+        <section class="stats">
+
+            <div class="stat-card">
+                <h3>Total Requests</h3>
+                <p id="totalRequests">0</p>
+            </div>
+
+            <div class="stat-card pending">
+                <h3>Pending</h3>
+                <p id="pendingRequests">0</p>
+            </div>
+
+            <div class="stat-card scheduled">
+                <h3>Scheduled</h3>
+                <p id="scheduledRequests">0</p>
+            </div>
+
+            <div class="stat-card completed">
+                <h3>Completed</h3>
+                <p id="completedRequests">0</p>
+            </div>
+
+        </section>
+
+
+        <!-- Search and Filter -->
+        <section class="filters">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="🔎 Search by name, phone or address..."
+            >
+
+            <select id="categoryFilter">
+
+                <option value="">All Categories</option>
+
+                <option value="Organic">
+                    🌱 Organic
+                </option>
+
+                <option value="Recyclable">
+                    ♻️ Recyclable
+                </option>
+
+                <option value="E-Waste">
+                    🔋 E-Waste
+                </option>
+
+                <option value="Hazardous">
+                    ☣️ Hazardous
+                </option>
+
+                <option value="General">
+                    🗑️ General
+                </option>
+
+            </select>
+
+
+            <select id="statusFilter">
+
+                <option value="">All Status</option>
+
+                <option value="Pending">
+                    Pending
+                </option>
+
+                <option value="Scheduled">
+                    Scheduled
+                </option>
+
+                <option value="Picked Up">
+                    Picked Up
+                </option>
+
+                <option value="Completed">
+                    Completed
+                </option>
+
+                <option value="Cancelled">
+                    Cancelled
+                </option>
+
+            </select>
+
+        </section>
+
+
+        <!-- Requests Table -->
+        <section class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Name</th>
+
+                        <th>Phone</th>
+
+                        <th>Category</th>
+
+                        <th>Address</th>
+
+                        <th>Date</th>
+
+                        <th>Time</th>
+
+                        <th>Status</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="requestsTable">
+
+                    <tr>
+                        <td colspan="9">
+                            Loading requests...
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+        let allRequests = [];
+
+
+        // Load requests
+        async function loadRequests() {
+
+            try {
+
+                const response =
+                    await fetch("/api/requests");
+
+                if (!response.ok) {
+                    throw new Error("Failed to load requests");
+                }
+
+                allRequests = await response.json();
+
+                displayRequests(allRequests);
+
+                updateStatistics(allRequests);
+
+            } catch (error) {
+
+                console.error(error);
+
+                document.getElementById("requestsTable").innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            ❌ Unable to load requests
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+
+        // Display requests
+        function displayRequests(requests) {
+
+            const table =
+                document.getElementById("requestsTable");
+
+            table.innerHTML = "";
+
+
+            if (requests.length === 0) {
+
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            No requests found.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+
+            requests.forEach(request => {
+
+                const row =
+                    document.createElement("tr");
+
+
+                row.innerHTML = `
+
+                    <td>
+                        #${request.id}
+                    </td>
+
+                    <td>
+                        ${request.name}
+                    </td>
+
+                    <td>
+                        ${request.phone}
+                    </td>
+
+                    <td>
+                        ${getCategoryIcon(request.waste_category)}
+                        ${request.waste_category}
+                    </td>
+
+                    <td>
+                        ${request.pickup_address}
+                    </td>
+
+                    <td>
+                        ${formatDate(request.pickup_date)}
+                    </td>
+
+                    <td>
+                        ${request.pickup_time || "-"}
+                    </td>
+
+                    <td>
+
+                        <span class="status ${getStatusClass(request.status)}">
+                            ${request.status}
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        <select
+                            onchange="updateStatus(${request.id}, this.value)"
+                        >
+
+                            <option
+                                value="Pending"
+                                ${request.status === "Pending" ? "selected" : ""}
+                            >
+                                Pending
+                            </option>
+
+                            <option
+                                value="Scheduled"
+                                ${request.status === "Scheduled" ? "selected" : ""}
+                            >
+                                Scheduled
+                            </option>
+
+                            <option
+                                value="Picked Up"
+                                ${request.status === "Picked Up" ? "selected" : ""}
+                            >
+                                Picked Up
+                            </option>
+
+                            <option
+                                value="Completed"
+                                ${request.status === "Completed" ? "selected" : ""}
+                            >
+                                Completed
+                            </option>
+
+                            <option
+                                value="Cancelled"
+                                ${request.status === "Cancelled" ? "selected" : ""}
+                            >
+                                Cancelled
+                            </option>
+
+                        </select>
+
+                    </td>
+
+                `;
+
+
+                table.appendChild(row);
+
+            });
+
+        }
+
+
+        // Update request status
+        async function updateStatus(id, status) {
+
+            try {
+
+                const response =
+                    await fetch(`/api/requests/${id}/status`, {
+
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            status: status
+                        })
+
+                    });
+
+
+                const result =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    alert(
+                        result.error ||
+                        "Unable to update status"
+                    );
+
+                    return;
+                }
+
+
+                // Reload data
+                loadRequests();
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "Server error while updating status."
+                );
+
+            }
+
+        }
+
+
+        // Statistics
+        function updateStatistics(requests) {
+
+            document.getElementById("totalRequests")
+                .textContent = requests.length;
+
+
+            document.getElementById("pendingRequests")
+                .textContent =
+                requests.filter(
+                    r => r.status === "Pending"
+                ).length;
+
+
+            document.getElementById("scheduledRequests")
+                .textContent =
+                requests.filter(
+                    r => r.status === "Scheduled"
+                ).length;
+
+
+            document.getElementById("completedRequests")
+                .textContent =
+                requests.filter(
+                    r => r.status === "Completed"
+                ).length;
+
+        }
+
+
+        // Search and filtering
+        function filterRequests() {
+
+            const search =
+                document.getElementById("searchInput")
+                    .value
+                    .toLowerCase();
+
+
+            const category =
+                document.getElementById("categoryFilter")
+                    .value;
+
+
+            const status =
+                document.getElementById("statusFilter")
+                    .value;
+
+
+            const filtered =
+                allRequests.filter(request => {
+
+
+                    const searchMatch =
+
+                        request.name
+                            .toLowerCase()
+                            .includes(search)
+
+                        ||
+
+                        request.phone
+                            .toLowerCase()
+                            .includes(search)
+
+                        ||
+
+                        request.pickup_address
+                            .toLowerCase()
+                            .includes(search);
+
+
+                    const categoryMatch =
+                        !category ||
+                        request.waste_category === category;
+
+
+                    const statusMatch =
+                        !status ||
+                        request.status === status;
+
+
+                    return (
+                        searchMatch &&
+                        categoryMatch &&
+                        statusMatch
+                    );
+
+                });
+
+
+            displayRequests(filtered);
+
+        }
+
+
+        // Category icons
+        function getCategoryIcon(category) {
+
+            const icons = {
+
+                "Organic": "🌱",
+
+                "Recyclable": "♻️",
+
+                "E-Waste": "🔋",
+
+                "Hazardous": "☣️",
+
+                "General": "🗑️"
+
+            };
+
+            return icons[category] || "🗑️";
+
+        }
+
+
+        // Status CSS class
+        function getStatusClass(status) {
+
+            return status
+                .toLowerCase()
+                .replace(" ", "-");
+
+        }
+
+
+        // Format date
+        function formatDate(date) {
+
+            if (!date) {
+                return "-";
+            }
+
+            return new Date(date)
+                .toLocaleDateString("en-IN");
+
+        }
+
+
+        // Search event
+        document
+            .getElementById("searchInput")
+            .addEventListener(
+                "input",
+                filterRequests
+            );
+
+
+        // Category filter
+        document
+            .getElementById("categoryFilter")
+            .addEventListener(
+                "change",
+                filterRequests
+            );
+
+
+        // Status filter
+        document
+            .getElementById("statusFilter")
+            .addEventListener(
+                "change",
+                filterRequests
+            );
+
+
+        // Initial load
+        loadRequests();
+
+    </script>
+
+</body>
+
+</html>
+```
+
+### Important
+
+This `admin.html` expects two backend APIs that we haven't created yet:
+
+```text
+GET /api/requests
+PUT /api/requests/:id/status
+```
+
+So if you open the admin page **right now**, the table will show:
+
+```text
+❌ Unable to load requests
+```
+
+That's expected.
+
+Next, add these two APIs to `server.js`. Open `server.js` and add the following **below your POST `/api/requests` route**:
+
+```javascript
+// Get all pickup requests
+app.get("/api/requests", async (req, res) => {
+
+    try {
+
+        const result = await pool.query(
+            "SELECT * FROM pickup_requests ORDER BY created_at DESC"
+        );
+
+        res.json(result.rows);
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to fetch requests"
+        });
+
+    }
+
+});
+
+
+// Update request status
+app.put("/api/requests/:id/status", async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const allowedStatuses = [
+            "Pending",
+            "Scheduled",
+            "Picked Up",
+            "Completed",
+            "Cancelled"
+        ];
+
+        if (!allowedStatuses.includes(status)) {
+
+            return res.status(400).json({
+                error: "Invalid status"
+            });
+
+        }
+
+        const result = await pool.query(
+            `UPDATE pickup_requests
+             SET status = $1
+             WHERE id = $2
+             RETURNING *`,
+            [status, id]
+        );
+
+        if (result.rows.length === 0) {
+
+            return res.status(404).json({
+                error: "Request not found"
+            });
+
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to update status"
+        });
+
+    }
+
+});
+```
+
+Then restart your server:
+
+```powershell
+npm run dev
+```
+
+Open:
+
+[http://localhost:5000/admin.html](http://localhost:5000/admin.html?utm_source=chatgpt.com)
+
+You should now see your submitted requests in the dashboard.
+
+**Next, we should make the admin dashboard look professional with dashboard cards, responsive table styling, status colors, and a request-tracking page.**
